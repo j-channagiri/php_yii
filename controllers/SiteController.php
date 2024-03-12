@@ -8,11 +8,10 @@ use yii\web\Controller;
 
 class SiteController extends Controller
 {
-
     /**
      * {@inheritdoc}
      */
-    public function actions()
+    public function actions(): array
     {
         return [
             'error' => [
@@ -26,7 +25,7 @@ class SiteController extends Controller
      *
      * @return string
      */
-    public function actionIndex()
+    public function actionIndex(): string
     {
         return $this->render('index');
     }
@@ -36,14 +35,20 @@ class SiteController extends Controller
      * @param string $exportType
      * @return string
      */
-    public function actionExport($exportType)
+    public function actionExport(string $exportType): string
     {
-        $model = new HistorySearch();
+        $dataProvider = HistorySearch::search(Yii::$app->request->queryParams);
+        $dataProvider->setSort([
+            'defaultOrder' => [
+                'ins_ts' => SORT_DESC,
+                'id' => SORT_DESC
+            ],
+        ]);
 
         return $this->render('export', [
-            'dataProvider' => $model->search(Yii::$app->request->queryParams),
+            'dataProvider' => $dataProvider,
             'exportType' => $exportType,
-            'model' => $model
+            'model' => new HistorySearch(),
         ]);
     }
 }
