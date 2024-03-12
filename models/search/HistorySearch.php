@@ -3,7 +3,11 @@
 namespace app\models\search;
 
 use app\models\History;
+use app\models\Sms;
+use Yii;
 use yii\base\Model;
+use yii\bootstrap\Html;
+use yii\caching\DbDependency;
 use yii\data\ActiveDataProvider;
 
 /**
@@ -37,41 +41,56 @@ class HistorySearch extends History
      *
      * @return ActiveDataProvider
      */
-    public function search($params)
+    public static function search(array $params): ActiveDataProvider
     {
-        $query = History::find();
+        // Define a cache key based on the parameters
+        $cacheKey = ['history_search', md5(serialize($params))];
+        // Check if data exists in cache
+        $dataProvider = Yii::$app->cache->get($cacheKey);
+        if ($dataProvider === false) {
+            $query = History::find()->with([
+                'customer',
+                'user',
+                'sms',
+                'task',
+                'call',
+                'fax',
+            ])->limit(20)->offset(20 * ($params['page'] - 1));
 
-        // add conditions that should always apply here
+            // add conditions that should always apply here
 
-        $dataProvider = new ActiveDataProvider([
-            'query' => $query,
-        ]);
+            $dataProvider = new ActiveDataProvider([
+                'query' => $query,
+            ]);
 
-        $dataProvider->setSort([
-            'defaultOrder' => [
-                'ins_ts' => SORT_DESC,
-                'id' => SORT_DESC
-            ],
-        ]);
+            $dataProvider->setSort([
+                'defaultOrder' => [
+                    'ins_ts' => SORT_DESC,
+                    'id' => SORT_DESC
+                ],
+            ]);
 
-        $this->load($params);
+            $model = new static();
+            $model->load($params);
 
-        if (!$this->validate()) {
-            // uncomment the following line if you do not want to return any records when validation fails
-            $query->where('0=1');
-            return $dataProvider;
+            if (!$model->validate()) {
+                // No need to return any records when validation fails
+                $query->where('0=1');
+            }
+
+            // Store data in cache with a dependency on the database schema
+            Yii::$app->cache->set(
+                $cacheKey,
+                $dataProvider,
+                null,
+                new DbDependency([
+                    'sql' => 'SELECT MAX(ins_ts) FROM ' . History::tableName(),
+                ])
+            );
         }
-
-        $query->addSelect('history.*');
-        $query->with([
-            'customer',
-            'user',
-            'sms',
-            'task',
-            'call',
-            'fax',
-        ]);
 
         return $dataProvider;
     }
+
+
 }

@@ -27,6 +27,24 @@ use yii\widgets\Pjax;
                     ]
                 );
             } ?>
+
+            <?php if (!empty($pdfExport)) {
+                echo Html::a(Yii::t('app', 'PDF'), $pdfExport,
+                    [
+                        'class' => 'btn btn-success',
+                        'data-pjax' => 0
+                    ]
+                );
+            } ?>
+
+            <?php if (!empty($xlsExport)) {
+                echo Html::a(Yii::t('app', 'Excel'), $xlsExport,
+                    [
+                        'class' => 'btn btn-success',
+                        'data-pjax' => 0
+                    ]
+                );
+            } ?>
         </div>
 
     </div>
